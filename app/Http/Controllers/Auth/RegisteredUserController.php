@@ -13,6 +13,7 @@ use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use App\Mail\WelcomeMail;
 use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendWelcomeEmail;
 
 
 class RegisteredUserController extends Controller
@@ -49,9 +50,17 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        // Pass the $user object into the mail
-        Mail::to($user)->later(now()->addSeconds(5), new WelcomeMail($user));
+        // dispatch the job to send the welcome email
+        // SendWelcomeEmail::dispatch($user);
+        // In RegisteredUserController.php
+        // Dispatch with a 5-second delay to play nice with Mailtrap limits
+        SendWelcomeEmail::dispatch($user)->delay(now()->addSeconds(5));
 
-        return redirect(route('dashboard', absolute: false));
+        // Redirect based on role
+        if ($user->role === 'admin') {
+            return redirect()->intended(route('dashboard'));
+        }
+
+        return redirect()->route('products.index');
     }
 }
