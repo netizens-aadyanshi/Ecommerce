@@ -6,8 +6,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Models\User;             // Add this
-use App\Mail\WelcomeMail;        // Add this
+use App\Models\User;
+use App\Mail\WelcomeMail;
 use Illuminate\Support\Facades\Mail;
 
 class SendWelcomeEmail implements ShouldQueue

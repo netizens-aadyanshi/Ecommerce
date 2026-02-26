@@ -29,8 +29,19 @@ class Product extends Model
         return $this->hasMany(ProductImage::class);
     }
 
-    public function primaryImage(){
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
+    }
 
+    public function primaryImage()
+    {
         return $this->hasOne(ProductImage::class)->where('is_primary', true);
+    }
+
+    // Add this so $product->orderItems()->exists() works in your destroy method
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

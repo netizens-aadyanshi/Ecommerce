@@ -10,13 +10,28 @@
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    {{-- Shared Dashboard --}}
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    {{-- Admin-Only Links --}}
+                    @if(Auth::user()->role === 'admin')
+                        <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
+                            {{ __('Categories') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('products.adminIndex')" :active="request()->routeIs('products.adminIndex', 'products.create', 'products.edit')">
+                            {{ __('Manage Products') }}
+                        </x-nav-link>
+                    @endif
+
+                    {{-- Customer/Shared Shop Link --}}
+                    <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.index') && !request()->routeIs('products.adminIndex')">
+                        {{ __('Shop') }}
+                    </x-nav-link>
                 </div>
-            </div>
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
