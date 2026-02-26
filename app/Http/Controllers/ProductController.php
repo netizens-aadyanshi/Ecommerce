@@ -13,9 +13,9 @@ class ProductController extends Controller
      */
     public function index()
     {
-        // Only show active products to customers
+
         $products = Product::where('is_active', true)
-            ->with('primaryImage') // Eager load for performance
+            ->with('primaryImage')
             ->latest()
             ->paginate(12);
 
@@ -53,7 +53,6 @@ class ProductController extends Controller
 
                 $product->images()->create([
                     'image_url' => $path,
-                    // Make the first image primary by default if none specified
                     'is_primary' => ($index === 0)
                 ]);
             }
@@ -95,20 +94,30 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product)
     {
-        // Update the text details
-        $product->update($request->validated());
+        // 1. Get all validated data
+        $validated = $request->validated();
 
-        // Handle NEW images if uploaded during edit
+        // 2. Remove 'images' from the array so we don't try to save it to the products table
+        $productData = collect($validated)->except('images')->toArray();
+
+        // 3. Update Name, Price, Stock, etc.
+        $product->update($productData);
+
+        // 4. Handle NEW images
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('products', 'public');
+            foreach ($request->file('images') as $key => $image) {
 
-                // Check if product already has a primary image
-                $hasPrimary = $product->images()->where('is_primary', true)->exists();
+                // Logic: Only make primary if the product currently has NO primary image
+                $isPrimary = false;
+                if ($key === 0 && !$product->images()->where('is_primary', true)->exists()) {
+                    $isPrimary = true;
+                }
+
+                $path = $image->store('products', 'public');
 
                 $product->images()->create([
                     'image_url' => $path,
-                    'is_primary' => !$hasPrimary // Make primary only if it's the very first image for this product
+                    'is_primary' => $isPrimary
                 ]);
             }
         }

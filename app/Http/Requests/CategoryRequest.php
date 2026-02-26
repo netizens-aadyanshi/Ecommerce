@@ -31,10 +31,7 @@ class CategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                // Only add the ignore ID part if $categoryId is NOT null
-                $categoryId
-                    ? "unique:categories,name,{$categoryId}"
-                    : "unique:categories,name"
+                Rule::unique('categories', 'name')->ignore($category?->id),
             ],
             'description' => 'nullable|string',
         ];
