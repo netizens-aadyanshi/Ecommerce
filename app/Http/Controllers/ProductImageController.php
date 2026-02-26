@@ -14,6 +14,7 @@ class ProductImageController extends Controller
     public function index()
     {
         //
+
     }
 
     /**
@@ -22,6 +23,7 @@ class ProductImageController extends Controller
     public function create()
     {
         //
+        // return view('product-images.create');
     }
 
     /**
@@ -30,6 +32,8 @@ class ProductImageController extends Controller
     public function store(StoreProductImageRequest $request)
     {
         //
+        // ProductImage::create($request->validated());
+        // return redirect()->route('products.adminIndex')->with('success', 'Product image uploaded successfully.');
     }
 
     /**
@@ -38,6 +42,7 @@ class ProductImageController extends Controller
     public function show(ProductImage $productImage)
     {
         //
+        // return view('product-images.show', compact('productImage'));
     }
 
     /**
@@ -46,6 +51,7 @@ class ProductImageController extends Controller
     public function edit(ProductImage $productImage)
     {
         //
+        // return view('product-images.edit', compact('productImage'));
     }
 
     /**
@@ -54,6 +60,8 @@ class ProductImageController extends Controller
     public function update(UpdateProductImageRequest $request, ProductImage $productImage)
     {
         //
+        // $productImage->update($request->validated());
+        // return redirect()->route('products.adminIndex')->with('success', 'Product image updated successfully.');
     }
 
     /**
@@ -61,6 +69,24 @@ class ProductImageController extends Controller
      */
     public function destroy(ProductImage $productImage)
     {
-        //
+        // 1. Delete the physical file from storage
+        \Storage::disk('public')->delete($productImage->image_url);
+
+        // 2. Delete the database record
+        $productImage->delete();
+
+        return back()->with('success', 'Image removed.');
+    }
+
+    public function setPrimary(ProductImage $productImage)
+    {
+        // 1. Set ALL images for THIS product to is_primary = false
+        ProductImage::where('product_id', $productImage->product_id)
+                    ->update(['is_primary' => false]);
+
+        // 2. Set the chosen image to true
+        $productImage->update(['is_primary' => true]);
+
+        return back()->with('success', 'Primary image updated.');
     }
 }

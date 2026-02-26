@@ -1,51 +1,26 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Shop Products') }}
-            </h2>
-
-            @if(auth()->user()->role === 'admin')
-                <a href="{{ route('dashboard') }}" class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm">
-                    Back to Admin Dashboard
-                </a>
-            @endif
-        </div>
-    </x-slot>
-
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                @foreach ($products as $product)
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
+                        <a href="{{ route('products.show', $product) }}">
+                            <img src="{{ $product->primaryImage ? asset('storage/' . $product->primaryImage->image_url) : asset('images/placeholder.png') }}"
+                                 class="w-full h-48 object-cover">
+                        </a>
 
-            @if(session('error'))
-                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    {{ session('error') }}
-                </div>
-            @endif
+                        <div class="p-4">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ $product->name }}</h3>
+                            <p class="text-xl font-bold text-indigo-600 mt-2">${{ number_format($product->price, 2) }}</p>
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 text-center">
-                    <h1 class="text-3xl font-bold mb-4">Welcome to our Store, {{ auth()->user()->name }}!</h1>
-                    <p class="text-gray-600 mb-8">You have successfully authenticated and verified your email.</p>
-
-                    <hr class="my-6">
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                            <div class="bg-gray-200 h-40 w-full mb-4 rounded"></div>
-                            <h3 class="font-bold">Sample Product</h3>
-                            <p class="text-gray-500">$99.99</p>
-                            <button class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded">View Details</button>
-                        </div>
-
-                        <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                            <div class="bg-gray-200 h-40 w-full mb-4 rounded"></div>
-                            <h3 class="font-bold">Another Item</h3>
-                            <p class="text-gray-500">$49.99</p>
-                            <button class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded">View Details</button>
+                            <a href="{{ route('products.show', $product) }}" class="mt-4 block text-center bg-gray-200 dark:bg-gray-700 py-2 rounded-md text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                                View Details
+                            </a>
                         </div>
                     </div>
-                </div>
+                @endforeach
             </div>
+            <div class="mt-6">{{ $products->links() }}</div>
         </div>
     </div>
 </x-app-layout>
