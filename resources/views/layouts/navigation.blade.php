@@ -16,8 +16,8 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    {{-- Admin-Only Links --}}
                     @if(Auth::user()->role === 'admin')
+
                         <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                             {{ __('Categories') }}
                         </x-nav-link>
@@ -25,12 +25,22 @@
                         <x-nav-link :href="route('products.adminIndex')" :active="request()->routeIs('products.adminIndex', 'products.create', 'products.edit')">
                             {{ __('Manage Products') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('orders.adminIndex')" :active="request()->routeIs('orders.adminIndex', 'orders.adminShow')">
+                            {{ __('Manage Orders') }}
+                        </x-nav-link>
                     @endif
 
                     {{-- Customer/Shared Shop Link --}}
-                    <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.index') && !request()->routeIs('products.adminIndex')">
-                        {{ __('Shop') }}
-                    </x-nav-link>
+                    @if(Auth::user()->role === 'customer')
+                        <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.index') && !request()->routeIs('products.adminIndex')">
+                            {{ __('Shop') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
+                            {{ __('My Orders') }}
+                        </x-nav-link>
+                    @endif
+
                 </div>
 
             <!-- Settings Dropdown -->

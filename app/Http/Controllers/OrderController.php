@@ -2,65 +2,155 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreOrderRequest;
-use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
+use App\Models\Product;
+use App\Http\Requests\OrderRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Mail\OrderPlacedMail;
+use App\Mail\OrderCancelledMail;
+use App\Mail\OrderStatusUpdatedMail;
+use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendOrderPlacedEmail;
+use App\Jobs\SendOrderStatusUpdatedEmail;
+use App\Jobs\SendOrderCancelledEmail;
 
 class OrderController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function adminIndex()
+    {
+        $orders = Order::with('user')->latest()->paginate(15);
+        return view('orders.adminIndex', compact('orders'));
+    }
+
+    public function updateStatus(Request $request, Order $order)
+    {
+        $newStatus = $request->status;
+        $currentStatus = $order->status;
+
+        if ($currentStatus === 'cancelled') {
+            return back()->with('error', 'This order is cancelled.');
+        }
+
+        switch ($currentStatus) {
+            case 'pending':
+                if (!in_array($newStatus, ['processing', 'cancelled'])) {
+                    return back()->with('error', "Invalid status transition from $currentStatus to $newStatus.");
+                }
+                break;
+            case 'processing':
+                if (!in_array($newStatus, ['completed', 'cancelled'])) {
+                    return back()->with('error', "Invalid status transition from $currentStatus to $newStatus.");
+                }
+                break;
+            case 'completed':
+                return back()->with('error', "Completed orders cannot be changed.");
+            default:
+                return back()->with('error', 'Invalid current order status.');
+        }
+
+        if ($currentStatus !== $newStatus) {
+            $order->update(['status' => $newStatus]);
+
+
+            SendOrderStatusUpdatedEmail::dispatch($order);
+
+            return back()->with('success', "Order moved to $newStatus.");
+        }
+
+        return back();
+    }
+
     public function index()
     {
-        //
+        $orders = auth()->user()->orders()->latest()->paginate(10);
+        return view('orders.index', compact('orders'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreOrderRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(Order $order)
     {
-        //
+        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+            abort(403, 'You do not have permission to view this order.');
+        }
+
+        $order->load(['user', 'orderItems.product']);
+
+        if (request()->is('admin/*')) {
+            return view('orders.adminShow', compact('order'));
+        }
+
+        return view('orders.show', compact('order'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Order $order)
+    public function store(OrderRequest $request)
     {
-        //
+        $product = Product::findOrFail($request->product_id);
+
+        DB::beginTransaction();
+
+        try {
+            $total = $product->price * $request->quantity;
+
+            $order = Order::create([
+                'user_id' => auth()->id(),
+                'status' => 'pending',
+                'subtotal' => $total,
+                'total' => $total,
+                'shipping_address' => $request->shipping_address,
+                'note' => $request->note,
+            ]);
+
+            $order->orderItems()->create([
+                'product_id' => $product->id,
+                'quantity' => $request->quantity,
+                'unit_price' => $product->price,
+                'total_price' => $total,
+            ]);
+
+            $product->decrement('stock', $request->quantity);
+
+            DB::commit();
+
+            SendOrderPlacedEmail::dispatch($order);
+
+            return redirect()->route('orders.index')->with('success', 'Order placed successfully!');
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return back()->with('error', 'Transaction failed: ' . $e->getMessage());
+        }
+
+
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateOrderRequest $request, Order $order)
+    public function cancel(Order $order)
     {
-        //
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Order $order)
-    {
-        //
+        $isAdmin = auth()->user()->role === 'admin';
+        $isOwner = $order->user_id === auth()->id();
+
+        if (!($isOwner || $isAdmin) || $order->status !== 'pending') {
+            return back()->with('error', 'This order cannot be cancelled.');
+        }
+
+        try {
+            DB::transaction(function () use ($order) {
+                $order->update(['status' => 'cancelled']);
+
+                foreach ($order->orderItems as $item) {
+                    $item->product->increment('stock', $item->quantity);
+                }
+            });
+
+
+            SendOrderCancelledEmail::dispatch($order);
+
+            return back()->with('success', 'Order cancelled and stock restored.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Cancellation failed.');
+        }
     }
 }
