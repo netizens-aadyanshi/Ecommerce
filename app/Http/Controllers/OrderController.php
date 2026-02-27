@@ -52,7 +52,7 @@ class OrderController extends Controller
             $order->update(['status' => $newStatus]);
 
             // Task Requirement: Dispatch Mail via Queue
-            // Mail::to($order->user)->queue(new OrderStatusUpdatedMail($order));
+            Mail::to($order->user)->queue(new OrderStatusUpdatedMail($order));
 
             return back()->with('success', "Order moved to $newStatus.");
         }
@@ -112,6 +112,8 @@ class OrderController extends Controller
 
             DB::commit();
 
+            Mail::to(auth()->user())->queue(new OrderPlacedMail($order));
+
             return redirect()->route('orders.index')->with('success', 'Order placed successfully!');
 
         } catch (\Exception $e) {
@@ -120,6 +122,8 @@ class OrderController extends Controller
 
             return back()->with('error', 'Transaction failed: ' . $e->getMessage());
         }
+
+
     }
 
     public function cancel(Order $order)
@@ -140,6 +144,8 @@ class OrderController extends Controller
                     $item->product->increment('stock', $item->quantity);
                 }
             });
+
+            Mail::to($order->user)->queue(new OrderCancelledMail($order));
 
             return back()->with('success', 'Order cancelled and stock restored.');
 
