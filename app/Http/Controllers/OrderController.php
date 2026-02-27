@@ -14,12 +14,10 @@ use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
-    // The "Status Ladder" - prevents status from moving backwards
-    protected $statusOrder = ['pending', 'processing', 'completed', 'cancelled'];
+    // protected $statusOrder = ['pending', 'processing', 'completed', 'cancelled'];
 
     public function adminIndex()
     {
-        // Using Order query with Eager Loading for performance
         $orders = Order::with('user')->latest()->paginate(15);
         return view('orders.adminIndex', compact('orders'));
     }
@@ -33,16 +31,21 @@ class OrderController extends Controller
             return back()->with('error', 'This order is cancelled.');
         }
 
-        $currentIndex = array_search($currentStatus, $this->statusOrder);
-        $newIndex = array_search($newStatus, $this->statusOrder);
-
-        // FIX: Check if the status exists in the array and use strict comparison
-        if ($newIndex === false) {
-            return back()->with('error', 'Invalid status selected.');
-        }
-
-        if ($newIndex < $currentIndex) {
-            return back()->with('error', "Status cannot be reverted to $newStatus.");
+        switch ($currentStatus) {
+            case 'pending':
+                if (!in_array($newStatus, ['processing', 'cancelled'])) {
+                    return back()->with('error', "Invalid status transition from $currentStatus to $newStatus.");
+                }
+                break;
+            case 'processing':
+                if (!in_array($newStatus, ['completed', 'cancelled'])) {
+                    return back()->with('error', "Invalid status transition from $currentStatus to $newStatus.");
+                }
+                break;
+            case 'completed':
+                return back()->with('error', "Completed orders cannot be changed.");
+            default:
+                return back()->with('error', 'Invalid current order status.');
         }
 
         if ($currentStatus !== $newStatus) {
@@ -82,36 +85,39 @@ class OrderController extends Controller
 
     public function store(OrderRequest $request)
     {
-        // Validation handled by OrderRequest
         $product = Product::findOrFail($request->product_id);
 
+        DB::beginTransaction();
+
         try {
-            $order = DB::transaction(function () use ($request, $product) {
-                $total = $product->price * $request->quantity;
+            $total = $product->price * $request->quantity;
 
-                $order = Order::create([
-                    'user_id' => auth()->id(),
-                    'status' => 'pending',
-                    'subtotal' => $total,
-                    'total' => $total,
-                    'shipping_address' => $request->shipping_address,
-                    'note' => $request->note,
-                ]);
+            $order = Order::create([
+                'user_id' => auth()->id(),
+                'status' => 'pending',
+                'subtotal' => $total,
+                'total' => $total,
+                'shipping_address' => $request->shipping_address,
+                'note' => $request->note,
+            ]);
 
-                $order->orderItems()->create([
-                    'product_id' => $product->id,
-                    'quantity' => $request->quantity,
-                    'unit_price' => $product->price,
-                    'total_price' => $total,
-                ]);
+            $order->orderItems()->create([
+                'product_id' => $product->id,
+                'quantity' => $request->quantity,
+                'unit_price' => $product->price,
+                'total_price' => $total,
+            ]);
 
-                $product->decrement('stock', $request->quantity);
-                return $order;
-            });
+            $product->decrement('stock', $request->quantity);
+
+            DB::commit();
 
             return redirect()->route('orders.index')->with('success', 'Order placed successfully!');
 
         } catch (\Exception $e) {
+
+            DB::rollBack();
+
             return back()->with('error', 'Transaction failed: ' . $e->getMessage());
         }
     }
@@ -122,7 +128,6 @@ class OrderController extends Controller
         $isAdmin = auth()->user()->role === 'admin';
         $isOwner = $order->user_id === auth()->id();
 
-        // Allow owner if pending, OR allow Admin regardless of ownership (but still only if pending)
         if (!($isOwner || $isAdmin) || $order->status !== 'pending') {
             return back()->with('error', 'This order cannot be cancelled.');
         }
