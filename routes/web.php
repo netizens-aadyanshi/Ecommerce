@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,9 +33,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Customer Product Browsing (Strictly Read-Only)
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::patch('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 });
 
 /*
@@ -42,24 +47,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
 | Admin-Only Routes (Management)
 |--------------------------------------------------------------------------
 */
+
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
-    // Category Management
     Route::resource('categories', CategoryController::class);
 
-    // Product Management Table View
     Route::get('/products', [ProductController::class, 'adminIndex'])->name('products.adminIndex');
 
-    // Product CRUD (Create, Edit, Store, Update, Destroy)
-    // Note: The prefix 'admin' makes the URL /admin/products/create
     Route::resource('products', ProductController::class)->except(['index', 'show']);
 
-    // Quick Toggle for Active/Inactive
     Route::post('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('products.toggle');
 
-    // Product Image Gallery Management
-    Route::get('/product-images/{productImage}/primary', [ProductImageController::class, 'setPrimary'])->name('product-images.setPrimary');
+    Route::patch('/product-images/{productImage}/primary', [ProductImageController::class, 'setPrimary'])->name('product-images.setPrimary');
     Route::delete('/product-images/{productImage}', [ProductImageController::class, 'destroy'])->name('product-images.destroy');
+
+    Route::get('/orders', [OrderController::class, 'adminIndex'])->name('orders.adminIndex');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.adminShow');
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
 });
 
 require __DIR__.'/auth.php';
