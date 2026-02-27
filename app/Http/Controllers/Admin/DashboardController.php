@@ -17,8 +17,8 @@ class DashboardController extends Controller
         // 2. Total orders count
         $totalOrders = Order::count();
 
-        // 3. Total revenue - sum of 'total' where status is 'delivered'
-        // Task Requirement: Filter by 'delivered' status
+        // 3. Total revenue - sum of 'total' where status is 'completed'
+        // Task Requirement: Filter by 'completed' status
         $totalRevenue = Order::where('status', 'completed')->sum('total');
 
         // 4. Pending orders count
