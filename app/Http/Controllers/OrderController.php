@@ -11,11 +11,12 @@ use App\Mail\OrderPlacedMail;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderStatusUpdatedMail;
 use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendOrderPlacedEmail;
+use App\Jobs\SendOrderStatusUpdatedEmail;
+use App\Jobs\SendOrderCancelledEmail;
 
 class OrderController extends Controller
 {
-    // protected $statusOrder = ['pending', 'processing', 'completed', 'cancelled'];
-
     public function adminIndex()
     {
         $orders = Order::with('user')->latest()->paginate(15);
@@ -51,8 +52,8 @@ class OrderController extends Controller
         if ($currentStatus !== $newStatus) {
             $order->update(['status' => $newStatus]);
 
-            // Task Requirement: Dispatch Mail via Queue
-            Mail::to($order->user)->queue(new OrderStatusUpdatedMail($order));
+
+            SendOrderStatusUpdatedEmail::dispatch($order);
 
             return back()->with('success', "Order moved to $newStatus.");
         }
@@ -62,7 +63,6 @@ class OrderController extends Controller
 
     public function index()
     {
-        // Query scoped to the authenticated user
         $orders = auth()->user()->orders()->latest()->paginate(10);
         return view('orders.index', compact('orders'));
     }
@@ -75,7 +75,6 @@ class OrderController extends Controller
 
         $order->load(['user', 'orderItems.product']);
 
-        // Check if the request is coming from the admin prefix route
         if (request()->is('admin/*')) {
             return view('orders.adminShow', compact('order'));
         }
@@ -112,7 +111,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            Mail::to(auth()->user())->queue(new OrderPlacedMail($order));
+            SendOrderPlacedEmail::dispatch($order);
 
             return redirect()->route('orders.index')->with('success', 'Order placed successfully!');
 
@@ -145,7 +144,8 @@ class OrderController extends Controller
                 }
             });
 
-            Mail::to($order->user)->queue(new OrderCancelledMail($order));
+
+            SendOrderCancelledEmail::dispatch($order);
 
             return back()->with('success', 'Order cancelled and stock restored.');
 
