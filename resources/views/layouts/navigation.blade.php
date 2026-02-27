@@ -18,6 +18,10 @@
 
                     @if(Auth::user()->role === 'admin')
 
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            {{ __('Admin Dashboard') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                             {{ __('Categories') }}
                         </x-nav-link>
@@ -33,6 +37,9 @@
 
                     {{-- Customer/Shared Shop Link --}}
                     @if(Auth::user()->role === 'customer')
+                        <x-nav-link :href="route('customer.dashboard')" :active="request()->routeIs('customer.dashboard')">
+                            {{ __('My Dashboard') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.index') && !request()->routeIs('products.adminIndex')">
                             {{ __('Shop') }}
                         </x-nav-link>

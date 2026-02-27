@@ -5,6 +5,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Customer\CustomerDashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +30,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // Add your NEW custom customer dashboard
+    Route::get('/my-account', [CustomerDashboardController::class, 'index'])->name('customer.dashboard');
+
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -49,6 +54,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 */
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::resource('categories', CategoryController::class);
 
