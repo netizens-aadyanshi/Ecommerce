@@ -21,7 +21,7 @@ class Product extends Model
 
     public function category(){
 
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class)->withDefault('Uncategorized');
     }
 
     public function productImages(){

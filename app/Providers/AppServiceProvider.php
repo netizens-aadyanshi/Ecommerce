@@ -24,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
         // Now PHP knows exactly what 'Event', 'Verified', and 'SendWelcomeEmail' are
         Event::listen(Verified::class, function ($event) {
             SendWelcomeEmail::dispatch($event->user);
