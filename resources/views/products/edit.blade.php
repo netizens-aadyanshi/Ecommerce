@@ -59,6 +59,39 @@
                     </div>
                 </div>
 
+                {{-- Tags Selection (Styled like Category) --}}
+                            <div class="md:col-span-2 border-t dark:border-gray-700 pt-6">
+                                <x-input-label for="tags" :value="__('Product Tags')" />
+
+                                <select name="tags[]"
+                                        id="tags"
+                                        multiple
+                                        size="5"
+                                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm transition">
+
+                                    @foreach($tags as $tag)
+                                        <option value="{{ $tag->id }}"
+                                            @if(isset($product) && $product->tags->contains($tag->id))
+                                                selected
+                                            @elseif(is_array(old('tags')) && in_array($tag->id, old('tags')))
+                                                selected
+                                            @endif
+                                        >
+                                            {{ $tag->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <div class="mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{{ __('To select multiple: Hold Ctrl (Windows) or Cmd (Mac) while clicking.') }}</span>
+                                </div>
+
+                                <x-input-error class="mt-2" :messages="$errors->get('tags')" />
+                            </div>
+
                 {{-- Part 2: Image Management --}}
                 <div class="p-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Product Images') }}</h3>

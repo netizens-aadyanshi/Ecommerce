@@ -35,6 +35,20 @@
                         <span class="text-indigo-500 font-semibold uppercase text-sm tracking-wider">{{ $product->category->name }}</span>
                         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $product->name }}</h1>
 
+                        {{-- START: Product Tags Badges --}}
+                        @if($product->tags->count() > 0)
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                @foreach($product->tags as $tag)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                        <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-indigo-400" fill="currentColor" viewBox="0 0 8 8">
+                                            <circle cx="4" cy="4" r="3" />
+                                        </svg>
+                                        {{ $tag->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+                        {{-- END: Product Tags Badges --}}
                         <p class="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed">{{ $product->description }}</p>
 
                         <div class="mt-6">

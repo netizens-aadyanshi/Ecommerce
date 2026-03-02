@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Tag;
 
 class ProductController extends Controller
 {
@@ -35,7 +36,9 @@ class ProductController extends Controller
     public function create()
     {
         $categories = Category::all();
-        return view('products.create', compact('categories'));
+        $tags = Tag::all();
+        return view('products.create', compact('categories', 'tags'));
+
     }
     /**
      * Store a newly created resource in storage.
@@ -44,7 +47,7 @@ class ProductController extends Controller
     {
         // 1. Create the Product first
         $product = Product::create($request->validated());
-
+        $product->tags()->sync($request->input('tags', []));
         // 2. Handle Image Uploads
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
@@ -72,7 +75,7 @@ class ProductController extends Controller
         }
 
         // Load images and category
-        $product->load(['images', 'category']);
+        $product->load(['tags','images', 'category']);
 
         return view('products.show', compact('product'));
     }
@@ -82,11 +85,11 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        // 1. Fetch all categories so the dropdown has options
         $categories = Category::all();
+        $tags = Tag::all();
+        $product->load('tags');
 
-        // 2. Pass both the product AND the categories to the view
-        return view('products.edit', compact('product', 'categories'));
+        return view('products.edit', compact('product', 'categories', 'tags'));
     }
 
     /**
@@ -94,20 +97,26 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product)
     {
-        // 1. Get all validated data
+        // 1. Get all validated data from your ProductRequest
         $validated = $request->validated();
 
-        // 2. Remove 'images' from the array so we don't try to save it to the products table
-        $productData = collect($validated)->except('images')->toArray();
+        // 2. Sync the many-to-many Tags
+        // We use $request->tags ?? [] to handle the case where all checkboxes are unchecked
+        $product->tags()->sync($request->tags ?? []);
 
-        // 3. Update Name, Price, Stock, etc.
+        // 3. Prepare product data by removing 'images' and 'tags'
+        // so they don't try to save into the 'products' table columns
+        $productData = collect($validated)->except(['images', 'tags'])->toArray();
+
+        // 4. Update Name, Price, Stock, etc.
         $product->update($productData);
 
-        // 4. Handle NEW images
+        // 5. Handle NEW image uploads
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $key => $image) {
 
                 // Logic: Only make primary if the product currently has NO primary image
+                // and this is the first image in the current upload batch ($key === 0)
                 $isPrimary = false;
                 if ($key === 0 && !$product->images()->where('is_primary', true)->exists()) {
                     $isPrimary = true;
@@ -124,7 +133,6 @@ class ProductController extends Controller
 
         return redirect()->route('products.adminIndex')->with('success', 'Product updated successfully.');
     }
-
     /**
      * Remove the specified resource from storage.
      */

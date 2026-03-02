@@ -23,6 +23,7 @@
                                 <th class="py-3 px-4 uppercase text-xs font-bold text-gray-500">Price</th>
                                 <th class="py-3 px-4 uppercase text-xs font-bold text-gray-500">Stock</th>
                                 <th class="py-3 px-4 uppercase text-xs font-bold text-gray-500 text-center">Status</th>
+                                <th class="py-3 px-4 uppercase text-xs font-bold text-gray-500">Tags</th>
                                 <th class="py-3 px-4 uppercase text-xs font-bold text-gray-500 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -51,6 +52,15 @@
                                         </button>
                                     </form>
                                 </td>
+                                <td class="py-4 px-4">
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($product->tags as $tag)
+                                        <span class="px-2 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600">
+                                            {{ $tag->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </td>
                                 <td class="py-4 px-4 text-right">
                                     <div class="flex justify-end gap-3">
                                         <a href="{{ route('products.edit', $product) }}" class="text-indigo-400 hover:text-indigo-300">Edit</a>

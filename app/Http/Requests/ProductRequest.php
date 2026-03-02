@@ -33,6 +33,24 @@ class ProductRequest extends FormRequest
             'images' => $isCreating ? 'required|array' : 'nullable|array',
 
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Please enter a product name.',
+            'name.unique' => 'This product name already exists.',
+            'price.required' => 'Please set a price for this item.',
+            'price.min' => 'Price cannot be a negative value.',
+            'category_id.exists' => 'The selected category is invalid.',
+            'images.required' => 'You must upload at least one image when creating a product.',
+            'images.*.image' => 'One of your uploads is not a valid image file.',
+            'images.*.max' => 'Images must not exceed 2MB in size.',
+            'tags.*.exists' => 'One of the selected tags is invalid.',
         ];
     }
 }
