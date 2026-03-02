@@ -49,11 +49,23 @@
                                             {{ Str::limit($category->description, 60) }}
                                         </td>
                                         <td class="py-4 px-4 text-right">
-                                            <div class="flex justify-end gap-4">
+                                            <div class="flex justify-end gap-4 items-center">
+                                                {{-- 1. New View Details Button --}}
+                                                <a href="{{ route('categories.adminShow', $category) }}"
+                                                class="inline-flex items-center px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-md text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition">
+                                                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    {{ __('View Reviews') }}
+                                                </a>
+
+                                                {{-- 2. Existing Edit Link --}}
                                                 <a href="{{ route('categories.edit', $category) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 text-sm font-medium">
                                                     {{ __('Edit') }}
                                                 </a>
 
+                                                {{-- 3. Existing Delete Form --}}
                                                 <form action="{{ route('categories.destroy', $category) }}" method="POST">
                                                     @csrf
                                                     @method('DELETE')
