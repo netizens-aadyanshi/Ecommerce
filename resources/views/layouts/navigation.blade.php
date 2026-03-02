@@ -33,6 +33,9 @@
                         <x-nav-link :href="route('orders.adminIndex')" :active="request()->routeIs('orders.adminIndex', 'orders.adminShow')">
                             {{ __('Manage Orders') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('tags.index')" :active="request()->routeIs('tags.*')">
+                            {{ __('Tags') }}
+                        </x-nav-link>
                     @endif
 
                     {{-- Customer/Shared Shop Link --}}
