@@ -42,8 +42,8 @@ class ProductRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The product needs a name.',
-            'name.unique' => 'This product name already exists in our database.',
+            'name.required' => 'Please enter a product name.',
+            'name.unique' => 'This product name already exists.',
             'price.required' => 'Please set a price for this item.',
             'price.min' => 'Price cannot be a negative value.',
             'category_id.exists' => 'The selected category is invalid.',

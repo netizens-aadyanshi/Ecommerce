@@ -28,4 +28,14 @@ class TagRequest extends FormRequest
             Rule::unique('tags', 'name')->ignore($this->tag?->id),
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'The tag name is required.',
+            'name.string' => 'The tag name must be a string.',
+            'name.max' => 'The tag name must not exceed 255 characters.',
+            'name.unique' => 'This tag name already exists. Please choose a different name.',
+        ];
+    }
 }
