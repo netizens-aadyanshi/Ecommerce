@@ -36,7 +36,7 @@
                                          class="w-12 h-12 object-cover rounded border dark:border-gray-600">
                                 </td>
                                 <td class="py-4 px-4 font-medium">{{ $product->name }}</td>
-                                <td class="py-4 px-4 text-sm">{{ $product->category->name }}</td>
+                                <td class="py-4 px-4 text-sm">{{ $product->category->name ?? 'Uncategorized' }}</td>
                                 <td class="py-4 px-4 text-sm font-bold">${{ number_format($product->price, 2) }}</td>
                                 <td class="py-4 px-4 text-sm">
                                     <span class="{{ $product->stock < 10 ? 'text-red-500 font-bold' : '' }}">
