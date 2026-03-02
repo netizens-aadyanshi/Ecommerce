@@ -75,7 +75,7 @@ class ProductController extends Controller
         }
 
         // Load images and category
-        $product->load(['tags','images', 'category']);
+        $product->load(['tags','images', 'category', 'reviews', 'reviews.user']);
 
         return view('products.show', compact('product'));
     }

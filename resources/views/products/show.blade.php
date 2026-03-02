@@ -146,7 +146,7 @@
 
                         {{-- 2. Display Existing Reviews --}}
                         <div class="space-y-8">
-                            @forelse($product->reviews()->with('user')->latest()->get() as $review)
+                            @forelse($product->reviews as $review)
                                 <div class="flex flex-col border-b dark:border-gray-800 pb-8">
                                     <div class="flex justify-between items-start mb-2">
                                         <div>
