@@ -44,23 +44,14 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
-<<<<<<< HEAD
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> 3ed03c8 (reviews section)
 
     public function tags()
     {
         return $this->belongsToMany(Tag::class);
     }
-<<<<<<< HEAD
-=======
 
     public function reviews()
     {
         return $this->hasMany(Review::class);
     }
->>>>>>> Stashed changes
->>>>>>> 3ed03c8 (reviews section)
 }

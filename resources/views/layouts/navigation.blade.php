@@ -33,22 +33,9 @@
                         <x-nav-link :href="route('orders.adminIndex')" :active="request()->routeIs('orders.adminIndex', 'orders.adminShow')">
                             {{ __('Manage Orders') }}
                         </x-nav-link>
-<<<<<<< HEAD
                         <x-nav-link :href="route('tags.index')" :active="request()->routeIs('tags.*')">
                             {{ __('Tags') }}
                         </x-nav-link>
-=======
-<<<<<<< Updated upstream
-=======
-                        <x-nav-link :href="route('tags.index')" :active="request()->routeIs('tags.*')">
-                            {{ __('Tags') }}
-                        </x-nav-link>
-
-
-
-
->>>>>>> Stashed changes
->>>>>>> 3ed03c8 (reviews section)
                     @endif
 
                     {{-- Customer/Shared Shop Link --}}
