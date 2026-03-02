@@ -39,10 +39,29 @@ class CategoryController extends Controller
     /**
      * Display the specified resource.
      */
+    // CategoryController.php
+
     public function show(Category $category)
     {
-        //
-        return view('categories.show', compact('category'));
+
+        $allCategories = Category::orderBy('name')->get();
+
+        $totalReviews = $category->reviews()->count();
+        $avgRating = $category->reviews()->avg('rating') ?? 0;
+
+        $recentReviews = $category->reviews()
+            ->with(['product', 'user'])
+            ->latest()
+            ->paginate(10);
+
+        // IMPORTANT: Ensure 'recentReviews' is in this list!
+        return view('categories.adminShow', compact(
+            'category',
+            'allCategories',
+            'totalReviews',
+            'avgRating',
+            'recentReviews'
+        ));
     }
 
     /**
@@ -76,4 +95,6 @@ class CategoryController extends Controller
         $category->delete();
         return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
     }
+
+
 }
