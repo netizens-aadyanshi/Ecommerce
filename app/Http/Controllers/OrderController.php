@@ -7,55 +7,33 @@ use App\Models\Product;
 use App\Http\Requests\OrderRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Mail\OrderPlacedMail;
-use App\Mail\OrderCancelledMail;
-use App\Mail\OrderStatusUpdatedMail;
-use Illuminate\Support\Facades\Mail;
-use App\Jobs\SendOrderPlacedEmail;
-use App\Jobs\SendOrderStatusUpdatedEmail;
-use App\Jobs\SendOrderCancelledEmail;
+use App\Services\OrderService;
+
+
 
 class OrderController extends Controller
 {
+    public function __construct(protected OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function adminIndex()
     {
-        $orders = Order::with('user')->latest()->paginate(15);
+        $orders = $this->orderService->getAllForAdmin();
         return view('orders.adminIndex', compact('orders'));
     }
 
     public function updateStatus(Request $request, Order $order)
     {
-        $newStatus = $request->status;
-        $currentStatus = $order->status;
-
-        if ($currentStatus === 'cancelled') {
-            return back()->with('error', 'This order is cancelled.');
-        }
-
-        switch ($currentStatus) {
-            case 'pending':
-                if (!in_array($newStatus, ['processing', 'cancelled'])) {
-                    return back()->with('error', "Invalid status transition from $currentStatus to $newStatus.");
-                }
-                break;
-            case 'processing':
-                if (!in_array($newStatus, ['completed', 'cancelled'])) {
-                    return back()->with('error', "Invalid status transition from $currentStatus to $newStatus.");
-                }
-                break;
-            case 'completed':
-                return back()->with('error', "Completed orders cannot be changed.");
-            default:
-                return back()->with('error', 'Invalid current order status.');
-        }
-
-        if ($currentStatus !== $newStatus) {
-            $order->update(['status' => $newStatus]);
-
-
-            SendOrderStatusUpdatedEmail::dispatch($order);
-
-            return back()->with('success', "Order moved to $newStatus.");
+        $request->validate([
+            'status' => 'required|in:pending,processing,completed,cancelled',
+        ]);
+        try {
+            $this->orderService->updateStatus($order, $request->input('status'));
+            return back()->with('success', 'Order status updated.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Something went wrong: ' . $e->getMessage());
         }
 
         return back();
@@ -63,61 +41,35 @@ class OrderController extends Controller
 
     public function index()
     {
-        $orders = auth()->user()->orders()->latest()->paginate(10);
+        $orders = $this->orderService->index();
         return view('orders.index', compact('orders'));
     }
 
     public function show(Order $order)
     {
-        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
-            abort(403, 'You do not have permission to view this order.');
+        try {
+            $order = $this->orderService->show($order);
+
+            if (request()->is('admin/*')) {
+                return view('orders.adminShow', compact('order'));
+            }
+
+            return view('orders.show', compact('order'));
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'You are not authorized to view this order.');
         }
 
-        $order->load(['user', 'orderItems.product']);
-
-        if (request()->is('admin/*')) {
-            return view('orders.adminShow', compact('order'));
-        }
-
-        return view('orders.show', compact('order'));
     }
 
     public function store(OrderRequest $request)
     {
-        $product = Product::findOrFail($request->product_id);
-
-        DB::beginTransaction();
-
         try {
-            $total = $product->price * $request->quantity;
-
-            $order = Order::create([
-                'user_id' => auth()->id(),
-                'status' => 'pending',
-                'subtotal' => $total,
-                'total' => $total,
-                'shipping_address' => $request->shipping_address,
-                'note' => $request->note,
-            ]);
-
-            $order->orderItems()->create([
-                'product_id' => $product->id,
-                'quantity' => $request->quantity,
-                'unit_price' => $product->price,
-                'total_price' => $total,
-            ]);
-
-            $product->decrement('stock', $request->quantity);
-
-            DB::commit();
-
-            SendOrderPlacedEmail::dispatch($order);
+            $this->orderService->store($request->validated());
 
             return redirect()->route('orders.index')->with('success', 'Order placed successfully!');
 
         } catch (\Exception $e) {
-
-            DB::rollBack();
 
             return back()->with('error', 'Transaction failed: ' . $e->getMessage());
         }
@@ -127,30 +79,15 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-
-        $isAdmin = auth()->user()->role === 'admin';
-        $isOwner = $order->user_id === auth()->id();
-
-        if (!($isOwner || $isAdmin) || $order->status !== 'pending') {
-            return back()->with('error', 'This order cannot be cancelled.');
+        if (auth()->id() !== $order->user_id && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Unauthorized action.');
         }
 
         try {
-            DB::transaction(function () use ($order) {
-                $order->update(['status' => 'cancelled']);
-
-                foreach ($order->orderItems as $item) {
-                    $item->product->increment('stock', $item->quantity);
-                }
-            });
-
-
-            SendOrderCancelledEmail::dispatch($order);
-
+            $this->orderService->cancel($order);
             return back()->with('success', 'Order cancelled and stock restored.');
-
         } catch (\Exception $e) {
-            return back()->with('error', 'Cancellation failed.');
+            return back()->with('error', $e->getMessage());
         }
     }
 }
