@@ -64,17 +64,17 @@ class ProductService
 
             // 2. Handle Image Uploads (if new images are provided)
             if ($images) {
-                // Optionally, you could delete old images here if needed
-                foreach ($images as $index => $image) {
-                    // Store file in storage/app/public/products
-                    $path = $image->store('products', 'public');
+            // Check if a primary already exists
+            $hasPrimary = $product->images()->where('is_primary', true)->exists();
 
-                    $product->images()->create([
-                        'image_url' => $path,
-                        'is_primary' => ($index === 0)
-                    ]);
-                }
+            foreach ($images as $index => $image) {
+                $path = $image->store('products', 'public');
+                $product->images()->create([
+                    'image_url' => $path,
+                    'is_primary' => ($index === 0 && !$hasPrimary) // Only make primary if none exist
+                ]);
             }
+        }
 
             DB::commit();
             return $product;
