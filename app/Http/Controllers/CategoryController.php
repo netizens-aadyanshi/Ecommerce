@@ -8,9 +8,8 @@ use App\Services\CategoryService;
 
 class CategoryController extends Controller
 {
-    protected $categoryService;
 
-    public function __construct(CategoryService $categoryService)
+    public function __construct(protected CategoryService $categoryService)
     {
         $this->categoryService = $categoryService;
     }
@@ -71,6 +70,10 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if ($category->products()->exists()) {
+            return back()->with('error', 'Cannot delete category with associated products.');
+        }
+
         try {
             $this->categoryService->delete($category);
 

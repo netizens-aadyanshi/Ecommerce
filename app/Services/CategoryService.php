@@ -63,9 +63,6 @@ class CategoryService
         DB::beginTransaction();
 
         try {
-            if ($category->products()->exists()) {
-                throw new Exception("Category contains active products.");
-            }
 
             $category->delete();
 

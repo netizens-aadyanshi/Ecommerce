@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
-class TagSerice
+class TagService
 {
     public function getAllPaginated()
     {
@@ -52,10 +52,6 @@ class TagSerice
     {
         DB::beginTransaction();
         try {
-
-            if ($tag->posts()->exists()) {
-                throw new Exception('Cannot delete tag with associated posts.');
-            }
 
             $tag->delete();
 

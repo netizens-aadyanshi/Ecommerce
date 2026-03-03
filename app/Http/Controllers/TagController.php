@@ -4,13 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TagRequest;
 use App\Models\Tag;
-use App\Services\TagSerice;
+use App\Services\TagService;
 
 class TagController extends Controller
 {
-    protected $tagService;
 
-    public function __construct(TagService $tagService)
+    public function __construct(protected TagService $tagService)
     {
         $this->tagService = $tagService;
     }
@@ -65,6 +64,10 @@ class TagController extends Controller
 
     public function destroy(Tag $tag)
     {
+        if ($tag->posts()->exists()) {
+            return back()->with('error', 'Cannot delete tag with associated posts.');
+        }
+
         try {
             $this->tagService->delete($tag);
 
