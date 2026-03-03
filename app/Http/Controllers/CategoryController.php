@@ -4,97 +4,82 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
+use App\Services\CategoryService;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
+
     public function index()
     {
-        //
-        $categories = Category::latest()->paginate(10);
+        $categories = $this->categoryService->getAllPaginated();
         return view('categories.index', compact('categories'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
         return view('categories.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(CategoryRequest $request)
     {
-        //
-        Category::create($request->validated());
-        return redirect()->route('categories.index')->with('success', 'Category created successfully.');
-    }
+        try {
+            $this->categoryService->create($request->validated());
 
-    /**
-     * Display the specified resource.
-     */
-    // CategoryController.php
+            return redirect()->route('categories.index')
+                ->with('success', 'Category created successfully.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Something went wrong.');
+        }
+    }
 
     public function show(Category $category)
     {
+        try {
+            $data = $this->categoryService->getCategoryDetails($category);
 
-        $allCategories = Category::orderBy('name')->get();
+            return view('categories.adminShow', $data);
 
-        $totalReviews = $category->reviews()->count();
-        $avgRating = $category->reviews()->avg('rating') ?? 0;
-
-        $recentReviews = $category->reviews()
-            ->with(['product', 'user'])
-            ->latest()
-            ->paginate(10);
-
-        // IMPORTANT: Ensure 'recentReviews' is in this list!
-        return view('categories.adminShow', compact(
-            'category',
-            'allCategories',
-            'totalReviews',
-            'avgRating',
-            'recentReviews'
-        ));
+        } catch (\Exception $e) {
+            return back()->with('error', 'Unable to load category details.');
+        }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Category $category)
     {
-        //
         return view('categories.edit', compact('category'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(CategoryRequest $request, Category $category)
     {
-        //
-        $category->update($request->validated());
-        return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
+        try {
+            $this->categoryService->update($category, $request->validated());
+
+            return redirect()->route('categories.index')
+                ->with('success', 'Category updated successfully.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Update failed.');
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Category $category)
     {
-        //
-        if ($category->products()->exists()) {
-        return redirect()->route('categories.index')->with('error', "Cannot delete category '{$category->name}': It contains active products.");
+        try {
+            $this->categoryService->delete($category);
+
+            return redirect()->route('categories.index')
+                ->with('success', 'Category deleted successfully.');
+
+        } catch (\Exception $e) {
+            return redirect()->route('categories.index')
+                ->with('error', $e->getMessage());
         }
-        $category->delete();
-        return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
     }
-
-
 }
