@@ -98,54 +98,82 @@ class OrderService
 
     public function store(array $data)
     {
-        return DB::transaction(function () use ($data) {
+        DB::beginTransaction();
+
+        try {
             $product = Product::findOrFail($data['product_id']);
+
+            if ($product->stock < $data['quantity']) {
+                throw new \Exception("Sorry, only {$product->stock} units are left in stock.");
+            }
+
             $total = $product->price * $data['quantity'];
 
-
             $order = Order::create([
-                'user_id' => auth()->id(),
-                'status' => 'pending',
-                'subtotal' => $total,
-                'total' => $total,
+                'user_id'          => auth()->id(),
+                'status'           => 'pending',
+                'subtotal'         => $total,
+                'total'            => $total,
                 'shipping_address' => $data['shipping_address'],
-                'note' => $data['note'] ?? null,
+                'note'             => $data['note'] ?? null,
             ]);
 
-
             $order->orderItems()->create([
-                'product_id' => $product->id,
-                'quantity' => $data['quantity'],
-                'unit_price' => $product->price,
+                'product_id'  => $product->id,
+                'quantity'    => $data['quantity'],
+                'unit_price'  => $product->price,
                 'total_price' => $total,
             ]);
 
-
-            if ($product->stock < $data['quantity']) {
-                throw new Exception("Not enough stock available.");
-            }
             $product->decrement('stock', $data['quantity']);
 
             SendOrderPlacedEmail::dispatch($order);
 
+            DB::commit();
+
             return $order;
-        });
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Order Placement Failed', [
+                'user_id' => auth()->id(),
+                'data'    => $data,
+                'error'   => $e->getMessage()
+            ]);
+
+            throw new \Exception($e->getMessage());
+        }
     }
 
     public function cancel(Order $order)
     {
-        return DB::transaction(function () use ($order) {
+        DB::beginTransaction();
+
+        try {
             if ($order->status !== 'pending') {
-                throw new Exception('Only pending orders can be cancelled.');
+                throw new \Exception('Only pending orders can be cancelled.');
             }
 
             $order->update(['status' => 'cancelled']);
+
             $this->restoreStock($order);
 
             SendOrderCancelledEmail::dispatch($order);
 
+            DB::commit();
             return $order;
-        });
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Order Cancellation Failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            throw new \Exception($e->getMessage());
+        }
     }
 
     protected function restoreStock(Order $order)

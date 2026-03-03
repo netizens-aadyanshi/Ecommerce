@@ -24,19 +24,16 @@ class OrderController extends Controller
         return view('orders.adminIndex', compact('orders'));
     }
 
-    public function updateStatus(Request $request, Order $order)
+    public function updateStatus(OrderRequest $request, Order $order)
     {
-        $request->validate([
-            'status' => 'required|in:pending,processing,completed,cancelled',
-        ]);
+
         try {
-            $this->orderService->updateStatus($order, $request->input('status'));
+            $this->orderService->updateStatus($order, $request->status);
+
             return back()->with('success', 'Order status updated.');
         } catch (\Exception $e) {
             return back()->with('error', 'Something went wrong: ' . $e->getMessage());
         }
-
-        return back();
     }
 
     public function index()

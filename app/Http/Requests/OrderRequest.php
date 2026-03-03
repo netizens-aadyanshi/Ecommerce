@@ -27,6 +27,7 @@ class OrderRequest extends FormRequest
                 'min:1',
                 "max:$maxStock" // Ensures user doesn't buy more than available
             ],
+            'status' => 'required|in:pending,processing,completed,cancelled',
             'shipping_address' => 'required|string|max:500',
             'note' => 'nullable|string|max:1000',
         ];
